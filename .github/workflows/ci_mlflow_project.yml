@@ -3,51 +3,44 @@ name: CI for MLflow Project
 on:
   push:
     branches:
-      - master 
+      - master # Trigger workflow every time there's a push to the 'master' branch
 
 jobs:
   train_model:
-    runs-on: ubuntu-latest # Jalankan di runner Ubuntu terbaru
+    runs-on: ubuntu-latest # Run the job on the latest Ubuntu runner
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4 # Mengambil kode dari repositori
+      uses: actions/checkout@v4 # Fetch the code from the repository
 
-    - name: Set up Miniconda
+    - name: Setup Miniconda and Create Environment
       uses: conda-incubator/setup-miniconda@v3
       with:
         miniconda-version: "latest"
-        python-version: 3.10.0 # Sesuaikan dengan versi Python di conda.yaml Anda
+        python-version: 3.10.0 # Make sure this matches your conda.yaml
         auto-update-conda: true
-        auto-activate-base: false
-        use-mamba: true # Opsional, bisa mempercepat instalasi
-        # Tambahkan ini untuk memastikan conda terinisialisasi di shell
-        # Tambahkan prefix miniconda ke PATH lingkungan job
-        activate-environment: "false" # Jangan aktifkan environment secara otomatis
-        # Pastikan kita mendapatkan output environment variabel yang diperlukan untuk aktivasi
-        add-to-path: true
+        use-mamba: true # Using mamba often speeds up environment creation
+        # Crucial change: Point directly to your conda.yaml file
+        environment-file: MLProject/conda.yaml # Path to your conda environment file
+        # We don't need to manually activate or add to path if using environment-file
+        # auto-activate-base: false
+        # activate-environment: "false"
+        # add-to-path: true
 
-    - name: Create Conda Environment and Run MLflow Project
-      # Gunakan `bash -lc` untuk memastikan shell diinisialisasi sebagai login shell
-      # yang diperlukan oleh conda init
-      shell: bash -l {0} # Ini memastikan shell diinisialisasi dengan benar untuk conda
-      run: |
-        # Buat lingkungan conda
-        conda env create -f conda.yaml
-        
-        # Aktifkan lingkungan conda
-        # Untuk memastikan aktivasi bekerja, kita perlu menjalankan perintahnya sebagai login shell
-        # Command `conda run -n environment_name your_command` adalah cara yang lebih modern
-        # dan direkomendasikan untuk menjalankan perintah dalam lingkungan conda tanpa perlu `activate`.
-        # Ini menghindari masalah `conda init` yang Anda alami.
-        
-        # Jalankan MLflow Project dalam lingkungan yang baru dibuat
-        conda run -n walmart_sales_env mlflow run .
-      working-directory: MLProject # Pastikan semua perintah dijalankan di dalam folder MLProject
+    - name: Run MLflow Project
+      # The 'environment-file' in setup-miniconda should activate the environment automatically.
+      # So, we can directly run mlflow.
+      # If you encounter "mlflow not found", then try:
+      # shell: bash -l {0}
+      # run: |
+      #   conda activate walmart_sales_env
+      #   mlflow run .
+      run: mlflow run . # Run the MLflow project
+      working-directory: MLProject # Ensure commands run within the MLProject folder
 
-    # Opsional: Langkah untuk mengunggah artefak atau hasil
-    # - name: Upload MLflow Artifacts
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: mlflow-artifacts
-    #     path: mlruns/ # MLflow menyimpan run di folder mlruns secara default
+    # Optional: Step to upload artifacts or results
+    - name: Upload MLflow Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: mlflow-artifacts
+        path: MLProject/mlruns/ # MLflow stores runs in the mlruns/ folder by default
