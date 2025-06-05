@@ -3,7 +3,7 @@ name: CI for MLflow Project
 on:
   push:
     branches:
-      - main # Trigger workflow setiap ada push ke branch 'main'
+      - master # Trigger workflow setiap ada push ke branch 'main'
 
 jobs:
   train_model:
@@ -19,7 +19,7 @@ jobs:
       uses: conda-incubator/setup-miniconda@v3
       with:
         miniconda-version: "latest"
-        python-version: 3.9 # Make sure this matches your conda.yaml
+        python-version: 3.10.0 # Make sure this matches your conda.yaml
         auto-update-conda: true
         use-mamba: true
         # Ini penting: Jangan aktifkan base environment secara otomatis
