@@ -3,7 +3,7 @@ name: CI for MLflow Project
 on:
   push:
     branches:
-      - master # Trigger workflow setiap ada push ke branch 'master'
+      - main # Trigger workflow setiap ada push ke branch 'main'
 
 jobs:
   train_model:
@@ -19,33 +19,36 @@ jobs:
         miniconda-version: "latest"
         python-version: 3.10.0 # Sesuaikan dengan versi Python di conda.yaml Anda
         auto-update-conda: true
-        auto-activate-base: false # Hindari aktivasi base env secara otomatis
+        auto-activate-base: false
         use-mamba: true # Opsional, bisa mempercepat instalasi
+        # Tambahkan ini untuk memastikan conda terinisialisasi di shell
+        # Tambahkan prefix miniconda ke PATH lingkungan job
+        activate-environment: "false" # Jangan aktifkan environment secara otomatis
+        # Pastikan kita mendapatkan output environment variabel yang diperlukan untuk aktivasi
+        add-to-path: true
 
     - name: Set up MLflow Tracking URI
       run: |
         echo "MLFLOW_TRACKING_URI=http://127.0.0.1:5000" >> $GITHUB_ENV
-        # Atau, jika Anda akan menggunakan MLflow Tracking Server eksternal (lebih advance)
-        # echo "MLFLOW_TRACKING_URI=${{ secrets.MLFLOW_TRACKING_URI }}" >> $GITHUB_ENV
-        # Ini hanya untuk demo lokal, di produksi Anda akan pakai server eksternal
+      # Tidak perlu working-directory di sini karena ini variabel lingkungan global
 
-    - name: Create and Activate Conda Environment
+    - name: Create Conda Environment and Run MLflow Project
+      # Gunakan `bash -lc` untuk memastikan shell diinisialisasi sebagai login shell
+      # yang diperlukan oleh conda init
+      shell: bash -l {0} # Ini memastikan shell diinisialisasi dengan benar untuk conda
       run: |
+        # Buat lingkungan conda
         conda env create -f conda.yaml
-        conda activate walmart_sales_env
-      working-directory: MLProject # Pastikan perintah ini dijalankan di dalam folder MLProject
-
-    - name: Install MLflow (if not in conda.yaml)
-      run: |
-        conda activate walmart_sales_env
-        pip install mlflow # Pastikan MLflow terinstal di env ini
-      working-directory: MLProject
-
-    - name: Run MLflow Project
-      run: |
-        conda activate walmart_sales_env
-        mlflow run . # Perintah untuk menjalankan MLflow Project dari direktori saat ini (MLProject)
-      working-directory: MLProject # Pastikan perintah ini dijalankan di dalam folder MLProject
+        
+        # Aktifkan lingkungan conda
+        # Untuk memastikan aktivasi bekerja, kita perlu menjalankan perintahnya sebagai login shell
+        # Command `conda run -n environment_name your_command` adalah cara yang lebih modern
+        # dan direkomendasikan untuk menjalankan perintah dalam lingkungan conda tanpa perlu `activate`.
+        # Ini menghindari masalah `conda init` yang Anda alami.
+        
+        # Jalankan MLflow Project dalam lingkungan yang baru dibuat
+        conda run -n walmart_sales_env mlflow run .
+      working-directory: MLProject # Pastikan semua perintah dijalankan di dalam folder MLProject
 
     # Opsional: Langkah untuk mengunggah artefak atau hasil
     # - name: Upload MLflow Artifacts
