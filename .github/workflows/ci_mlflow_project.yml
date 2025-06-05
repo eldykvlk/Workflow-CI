@@ -3,7 +3,7 @@ name: CI for MLflow Project
 on:
   push:
     branches:
-      - main # Trigger workflow setiap ada push ke branch 'main'
+      - master # Trigger workflow setiap ada push ke branch 'master'
 
 jobs:
   train_model:
