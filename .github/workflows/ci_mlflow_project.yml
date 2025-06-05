@@ -61,7 +61,7 @@ jobs:
       shell: bash -l {0} # Tetap gunakan login shell untuk robustness
       run: |
         echo "Running MLflow project within 'walmart_sales_env' using conda run..."
-        conda run -n walmart_sales_env mlflow run . --no-conda
+        conda run -n walmart_sales_env mlflow run --no-conda .
         echo "MLflow project run completed."
       working-directory: MLProject # Perintah mlflow run . dijalankan di sini
 
