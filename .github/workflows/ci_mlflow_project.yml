@@ -17,7 +17,7 @@ jobs:
       uses: conda-incubator/setup-miniconda@v3
       with:
         miniconda-version: "latest"
-        python-version: 3.9 # Make sure this matches your conda.yaml
+        python-version: 3.10.0 # Make sure this matches your conda.yaml
         auto-update-conda: true
         use-mamba: true
         environment-file: MLProject/conda.yaml # Path to your conda environment file
