@@ -57,13 +57,12 @@ jobs:
         conda deactivate
       working-directory: MLProject # Pastikan perintah ini dijalankan di dalam folder MLProject
 
-    - name: Run MLflow Project
-      shell: bash -l {0} # Tetap gunakan login shell untuk robustness
+    - name: Run training script with MLflow logging
+      shell: bash -l {0}
       run: |
-        echo "Running MLflow project within 'walmart_sales_env' using conda run..."
-        conda run -n walmart_sales_env mlflow run --no-conda .
-        echo "MLflow project run completed."
-      working-directory: MLProject # Perintah mlflow run . dijalankan di sini
+        conda run -n walmart_sales_env python modelling.py
+      working-directory: MLProject
+    
 
     # Opsional: Langkah untuk mengunggah artefak atau hasil
     - name: Upload MLflow Artifacts
