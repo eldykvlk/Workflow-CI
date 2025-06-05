@@ -17,7 +17,7 @@ jobs:
       uses: conda-incubator/setup-miniconda@v3
       with:
         miniconda-version: "latest"
-        python-version: 3.9 # Sesuaikan dengan versi Python di conda.yaml Anda
+        python-version: 3.10.0 # Sesuaikan dengan versi Python di conda.yaml Anda
         auto-update-conda: true
         auto-activate-base: false # Hindari aktivasi base env secara otomatis
         use-mamba: true # Opsional, bisa mempercepat instalasi
@@ -31,7 +31,7 @@ jobs:
 
     - name: Create and Activate Conda Environment
       run: |
-        conda env create -f MLProject/conda.yaml
+        conda env create -f conda.yaml
         conda activate walmart_sales_env
       working-directory: MLProject # Pastikan perintah ini dijalankan di dalam folder MLProject
 
