@@ -11,7 +11,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 def train_model():
     # Set URI tracking MLflow (lokal)
-    mlflow.set_tracking_uri("http://127.0.0.1:5000") # Bisa diubah jika port 5000 bentrok
+    mlflow.set_tracking_uri("file:///tmp/mlruns")
+
 
     # Nama eksperimen MLflow
     experiment_name = "Walmart Sales Prediction Basic"
