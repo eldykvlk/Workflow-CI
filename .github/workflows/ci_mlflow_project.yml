@@ -1,0 +1,55 @@
+name: CI for MLflow Project
+
+on:
+  push:
+    branches:
+      - main # Trigger workflow setiap ada push ke branch 'main'
+
+jobs:
+  train_model:
+    runs-on: ubuntu-latest # Jalankan di runner Ubuntu terbaru
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4 # Mengambil kode dari repositori
+
+    - name: Set up Miniconda
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        miniconda-version: "latest"
+        python-version: 3.9 # Sesuaikan dengan versi Python di conda.yaml Anda
+        auto-update-conda: true
+        auto-activate-base: false # Hindari aktivasi base env secara otomatis
+        use-mamba: true # Opsional, bisa mempercepat instalasi
+
+    - name: Set up MLflow Tracking URI
+      run: |
+        echo "MLFLOW_TRACKING_URI=http://127.0.0.1:5000" >> $GITHUB_ENV
+        # Atau, jika Anda akan menggunakan MLflow Tracking Server eksternal (lebih advance)
+        # echo "MLFLOW_TRACKING_URI=${{ secrets.MLFLOW_TRACKING_URI }}" >> $GITHUB_ENV
+        # Ini hanya untuk demo lokal, di produksi Anda akan pakai server eksternal
+
+    - name: Create and Activate Conda Environment
+      run: |
+        conda env create -f MLProject/conda.yaml
+        conda activate walmart_sales_env
+      working-directory: MLProject # Pastikan perintah ini dijalankan di dalam folder MLProject
+
+    - name: Install MLflow (if not in conda.yaml)
+      run: |
+        conda activate walmart_sales_env
+        pip install mlflow # Pastikan MLflow terinstal di env ini
+      working-directory: MLProject
+
+    - name: Run MLflow Project
+      run: |
+        conda activate walmart_sales_env
+        mlflow run . # Perintah untuk menjalankan MLflow Project dari direktori saat ini (MLProject)
+      working-directory: MLProject # Pastikan perintah ini dijalankan di dalam folder MLProject
+
+    # Opsional: Langkah untuk mengunggah artefak atau hasil
+    # - name: Upload MLflow Artifacts
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: mlflow-artifacts
+    #     path: mlruns/ # MLflow menyimpan run di folder mlruns secara default

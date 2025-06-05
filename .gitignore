@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# MLflow
+mlruns/ # JANGAN upload folder mlruns ke GitHub jika Anda melacak secara lokal
+.mlflow/
+
+# Logs
+*.log
