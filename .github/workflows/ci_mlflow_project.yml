@@ -27,11 +27,6 @@ jobs:
         # Pastikan kita mendapatkan output environment variabel yang diperlukan untuk aktivasi
         add-to-path: true
 
-    - name: Set up MLflow Tracking URI
-      run: |
-        echo "MLFLOW_TRACKING_URI=http://127.0.0.1:5000" >> $GITHUB_ENV
-      # Tidak perlu working-directory di sini karena ini variabel lingkungan global
-
     - name: Create Conda Environment and Run MLflow Project
       # Gunakan `bash -lc` untuk memastikan shell diinisialisasi sebagai login shell
       # yang diperlukan oleh conda init
