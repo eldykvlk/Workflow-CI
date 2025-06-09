@@ -10,8 +10,7 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def train_model():
-    # Set URI tracking MLflow (lokal)
-    mlflow.set_tracking_uri("file:///tmp/mlruns")
+
 
 
     # Nama eksperimen MLflow
