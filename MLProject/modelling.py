@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 def train_model():
 
-
+    mlflow.set_tracking_uri("file:///tmp/mlruns")
 
     # Nama eksperimen MLflow
     experiment_name = "Walmart Sales Prediction Basic"
