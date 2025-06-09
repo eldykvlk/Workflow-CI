@@ -7,87 +7,66 @@ on:
 
 jobs:
   train_model:
-    runs-on: ubuntu-latest # set up job
+    runs-on: ubuntu-latest # Jalankan di runner Ubuntu terbaru
 
     steps:
-    - name: Run actions/checkout@v3 # Mengambil kode dari repositori
-      uses: actions/checkout@v4 # Menggunakan v4, kompatibel dengan v3
+    - name: Checkout repository
+      uses: actions/checkout@v4 # Mengambil kode dari repositori
 
-    - name: Set up Python 3.12.7 # Setup Miniconda dan versi Python
+    - name: Setup Miniconda
       uses: conda-incubator/setup-miniconda@v3
       with:
         miniconda-version: "latest"
-        python-version: 3.12.7
+        python-version: 3.10.0 # Make sure this matches your conda.yaml
         auto-update-conda: true
         use-mamba: true
         auto-activate-base: false
         add-to-path: true
 
-    - name: Check Env # Debug: List Existing Conda Environments
+    - name: List Existing Conda Environments (for debug)
       shell: bash -l {0}
       run: |
-        echo "Listing all known conda environments:"
+        echo "Listing all known conda environments BEFORE creation attempt:"
         conda info --envs
 
-    - name: Install dependencies # Membuat dan menginstal dependensi Conda Environment
-      shell: bash -l {0}
+    - name: Create Conda Environment
+      shell: bash -l {0} # Tetap gunakan login shell
       run: |
         echo "Creating conda environment 'walmart_sales_env' from conda.yaml..."
+        # Hapus '|| true' agar step ini GAGAL jika pembuatan environment tidak berhasil
         conda env create -f conda.yaml
         echo "Conda environment creation finished successfully."
-      working-directory: MLProject
+      working-directory: MLProject # Perintah conda env create dijalankan di sini
 
-    - name: Debug: List MLProject directory BEFORE training
-      run: |
-        echo "Current working directory: $(pwd)" # Konfirmasi direktori saat ini (repo root)
-        echo "Contents of MLProject/ directory BEFORE training:"
-        ls -la MLProject/ || echo "MLProject/ directory not found or empty."
-        echo "Checking for Walmart_Sales_preprocessing.csv inside MLProject/:"
-        ls -l MLProject/Walmart_Sales_preprocessing.csv || echo "Walmart_Sales_preprocessing.csv not found in MLProject/."
-      # Jalankan dari root repositori untuk melihat MLProject/
-
-    - name: Run mlflow project # Menjalankan skrip pelatihan dengan logging MLflow
+    - name: List Existing Conda Environments (for debug, AFTER creation attempt)
       shell: bash -l {0}
       run: |
-        echo "Current working directory INSIDE this step: $(pwd)" # Konfirmasi direktori ini adalah MLProject/
-        echo "Running training script with MLflow logging..."
-        # PENTING: Ini yang akan mengontrol lokasi mlruns
-        export MLFLOW_TRACKING_URI="file://$PWD/mlruns"
-        echo "MLFLOW_TRACKING_URI set to: $MLFLOW_TRACKING_URI" # Konfirmasi nilai variabel ini
+        echo "Listing all known conda environments AFTER creation attempt:"
+        conda info --envs
+
+    - name: Verify Conda Environment (for debug)
+      shell: bash -l {0}
+      run: |
+        echo "Verifying 'walmart_sales_env'..."
+        # Coba aktifkan lingkungan untuk memastikan itu valid dan ada
+        conda activate walmart_sales_env
+        echo "Successfully activated 'walmart_sales_env'. Listing installed packages:"
+        conda list
+        # Jika berhasil diaktifkan, kita bisa nonaktifkan lagi agar langkah selanjutnya
+        # menggunakan 'conda run -n' dari shell 'base'
+        conda deactivate
+      working-directory: MLProject # Pastikan perintah ini dijalankan di dalam folder MLProject
+
+    - name: Run training script with MLflow logging
+      shell: bash -l {0}
+      run: |
         conda run -n walmart_sales_env python modelling.py
-        echo "Training script execution finished."
-      working-directory: MLProject # Pastikan perintah ini dijalankan dari dalam direktori MLProject
+      working-directory: MLProject
+    
 
-    - name: Debug: List MLProject directory AFTER training
-      run: |
-        echo "Current working directory: $(pwd)" # Konfirmasi direktori saat ini (repo root)
-        echo "Contents of MLProject/ directory AFTER training:"
-        ls -la MLProject/ || echo "MLProject/ directory not found or empty."
-        echo "Checking for MLflow runs directory (mlruns/) inside MLProject/:"
-        ls -la MLProject/mlruns/ || echo "MLProject/mlruns/ does not exist or is empty." # Periksa secara spesifik folder mlruns
-      # Jalankan dari root repositori untuk melihat MLProject/
-
-    - name: Get latest MLflow run_id # Mendapatkan ID run MLflow terbaru
-      id: get_run_id # ID untuk mereferensikan output dari step ini
-      working-directory: MLProject # Pastikan di dalam direktori MLProject
-      run: |
-        echo "Current working directory INSIDE this step: $(pwd)" # Konfirmasi direktori ini adalah MLProject/
-        # Cari direktori run terbaru berdasarkan timestamp (biasanya nama direktori adalah run_id)
-        LATEST_RUN_DIR=$(find mlruns/ -maxdepth 2 -type d -name "*-*-*-*-*" | sort -r | head -n 1)
-
-        if [ -z "$LATEST_RUN_DIR" ]; then
-          echo "No MLflow run directory found in mlruns/."
-          exit 1
-        fi
-
-        LATEST_RUN_ID=$(basename "$LATEST_RUN_DIR")
-        echo "Found latest MLflow run ID: $LATEST_RUN_ID"
-
-        # Simpan run_id sebagai output step, sehingga bisa diakses oleh step lain jika diperlukan
-        echo "run_id=$LATEST_RUN_ID" >> $GITHUB_OUTPUT
-
-    - name: Upload MLflow Artifacts # Mengunggah artefak MLflow yang dihasilkan
+    # Opsional: Langkah untuk mengunggah artefak atau hasil
+    - name: Upload MLflow Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: mlflow-artifacts
-        path: MLProject/mlruns/
+        path: MLProject/mlruns/ # MLflow stores runs in the mlruns/ folder by default
