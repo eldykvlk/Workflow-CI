@@ -37,34 +37,57 @@ jobs:
         echo "Conda environment creation finished successfully."
       working-directory: MLProject
 
-    - name: Run mlflow project
+    - name: Debug: List MLProject directory BEFORE training
+      run: |
+        echo "Current working directory: $(pwd)" # Konfirmasi direktori saat ini (repo root)
+        echo "Contents of MLProject/ directory BEFORE training:"
+        ls -la MLProject/ || echo "MLProject/ directory not found or empty."
+        echo "Checking for Walmart_Sales_preprocessing.csv inside MLProject/:"
+        ls -l MLProject/Walmart_Sales_preprocessing.csv || echo "Walmart_Sales_preprocessing.csv not found in MLProject/."
+      # Jalankan dari root repositori untuk melihat MLProject/
+
+    - name: Run mlflow project # Menjalankan skrip pelatihan dengan logging MLflow
       shell: bash -l {0}
       run: |
+        echo "Current working directory INSIDE this step: $(pwd)" # Konfirmasi direktori ini adalah MLProject/
         echo "Running training script with MLflow logging..."
-        # Tidak perlu mengatur MLFLOW_TRACKING_URI di sini karena modelling.py sudah mengaturnya
+        # PENTING: Ini yang akan mengontrol lokasi mlruns
+        export MLFLOW_TRACKING_URI="file://$PWD/mlruns"
+        echo "MLFLOW_TRACKING_URI set to: $MLFLOW_TRACKING_URI" # Konfirmasi nilai variabel ini
         conda run -n walmart_sales_env python modelling.py
         echo "Training script execution finished."
-      working-directory: MLProject # Tetap jalankan python di sini agar path ke modelling.py benar
+      working-directory: MLProject # Pastikan perintah ini dijalankan dari dalam direktori MLProject
 
-    - name: Get latest MLflow run_id
-      id: get_run_id
-      # working-directory: MLProject # TIDAK DIPERLUKAN LAGI UNTUK PENCARIAN MLRUNS
+    - name: Debug: List MLProject directory AFTER training
       run: |
-        # Cari direktori run terbaru di /tmp/mlruns/, BUKAN di MLProject/mlruns/
-        LATEST_RUN_DIR=$(find /tmp/mlruns/ -maxdepth 2 -type d -name "*-*-*-*-*" | sort -r | head -n 1)
+        echo "Current working directory: $(pwd)" # Konfirmasi direktori saat ini (repo root)
+        echo "Contents of MLProject/ directory AFTER training:"
+        ls -la MLProject/ || echo "MLProject/ directory not found or empty."
+        echo "Checking for MLflow runs directory (mlruns/) inside MLProject/:"
+        ls -la MLProject/mlruns/ || echo "MLProject/mlruns/ does not exist or is empty." # Periksa secara spesifik folder mlruns
+      # Jalankan dari root repositori untuk melihat MLProject/
+
+    - name: Get latest MLflow run_id # Mendapatkan ID run MLflow terbaru
+      id: get_run_id # ID untuk mereferensikan output dari step ini
+      working-directory: MLProject # Pastikan di dalam direktori MLProject
+      run: |
+        echo "Current working directory INSIDE this step: $(pwd)" # Konfirmasi direktori ini adalah MLProject/
+        # Cari direktori run terbaru berdasarkan timestamp (biasanya nama direktori adalah run_id)
+        LATEST_RUN_DIR=$(find mlruns/ -maxdepth 2 -type d -name "*-*-*-*-*" | sort -r | head -n 1)
 
         if [ -z "$LATEST_RUN_DIR" ]; then
-          echo "No MLflow run directory found in /tmp/mlruns/."
+          echo "No MLflow run directory found in mlruns/."
           exit 1
         fi
 
         LATEST_RUN_ID=$(basename "$LATEST_RUN_DIR")
         echo "Found latest MLflow run ID: $LATEST_RUN_ID"
+
+        # Simpan run_id sebagai output step, sehingga bisa diakses oleh step lain jika diperlukan
         echo "run_id=$LATEST_RUN_ID" >> $GITHUB_OUTPUT
 
-    - name: Upload MLflow Artifacts
+    - name: Upload MLflow Artifacts # Mengunggah artefak MLflow yang dihasilkan
       uses: actions/upload-artifact@v4
       with:
         name: mlflow-artifacts
-        # PENTING: Ubah path ini agar sesuai dengan /tmp/mlruns
-        path: /tmp/mlruns/
+        path: MLProject/mlruns/
