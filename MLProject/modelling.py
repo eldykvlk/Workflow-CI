@@ -10,6 +10,9 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def train_model():
+    # Set URI tracking MLflow 
+    mlflow.set_tracking_uri("file:mlruns")
+
 
 
     # Nama eksperimen MLflow
@@ -37,16 +40,18 @@ def train_model():
             return
 
         # Feature Engineering (ulangi seperti di preprocessing Anda)
+        # Pastikan kolom 'Date' ada dan dikonversi jika belum (jika preprocessing tidak menyimpan Date)
         if 'Date' in df.columns:
             df['Date'] = pd.to_datetime(df['Date'])
             df['Month'] = df['Date'].dt.month
             df['Year'] = df['Date'].dt.year
-            df = df.drop('Date', axis=1) 
+            df = df.drop('Date', axis=1) # Drop original Date column after extraction
             logging.info("Date column processed for Month and Year features.")
         else:
             logging.warning("Date column not found. Ensure preprocessing output includes it if needed for feature engineering.")
 
         # Create lagged features - Perlu grouping by 'Store'
+        # Perlu dipastikan kolom Store ada dan Weekly_Sales
         if 'Store' in df.columns and 'Weekly_Sales' in df.columns:
             df['Weekly_Sales_Lag1'] = df.groupby('Store')['Weekly_Sales'].shift(1)
             df['Weekly_Sales_Lag2'] = df.groupby('Store')['Weekly_Sales'].shift(2)
@@ -71,6 +76,10 @@ def train_model():
         logging.info(f"NaN values dropped. Dataset shape after dropping NaNs: {df.shape}")
 
         # Definisikan fitur (X) dan variabel target (y)
+        # Pastikan semua kolom yang Anda gunakan di preprocessing sudah ada
+        # Hapus kolom yang bukan fitur, misal 'Store' jika tidak digunakan sebagai fitur
+        # Jika 'Store' adalah fitur kategorikal, Anda mungkin perlu One-Hot Encoding
+        # Namun, untuk Basic, kita bisa drop dulu 'Store' jika tidak dipakai
         features = [col for col in df.columns if col not in ['Weekly_Sales']]
         X = df[features]
         y = df['Weekly_Sales']
@@ -78,6 +87,8 @@ def train_model():
         logging.info(f"Features used: {features}")
 
         # Bagi data menjadi training dan testing sets
+        # Pastikan kolom 'Store' ada untuk stratifikasi jika ingin menggunakan stratify
+        # Jika tidak, hapus parameter stratify
         if 'Store' in df.columns:
              X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=df['Store'])
              logging.info("Data split into training and testing sets with stratification on 'Store' column.")
@@ -114,5 +125,5 @@ def train_model():
         logging.info("Training process finished.")
 
 if __name__ == "__main__":
-    import numpy as np
+    import numpy as np # Pastikan numpy diimpor di sini juga
     train_model()
