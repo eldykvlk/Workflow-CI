@@ -37,41 +37,34 @@ jobs:
         echo "Conda environment creation finished successfully."
       working-directory: MLProject
 
-    - name: Run mlflow project # Menjalankan skrip pelatihan dengan logging MLflow
+    - name: Run mlflow project
       shell: bash -l {0}
       run: |
         echo "Running training script with MLflow logging..."
-        # Penting: Set MLFLOW_TRACKING_URI untuk melacak secara lokal di runner
-        export MLFLOW_TRACKING_URI="file://$PWD/mlruns"
+        # Tidak perlu mengatur MLFLOW_TRACKING_URI di sini karena modelling.py sudah mengaturnya
         conda run -n walmart_sales_env python modelling.py
         echo "Training script execution finished."
-      working-directory: MLProject
+      working-directory: MLProject # Tetap jalankan python di sini agar path ke modelling.py benar
 
-    - name: Get latest MLflow run_id # Mendapatkan ID run MLflow terbaru
-      id: get_run_id # ID untuk mereferensikan output dari step ini
-      working-directory: MLProject # Pastikan di dalam direktori MLProject
+    - name: Get latest MLflow run_id
+      id: get_run_id
+      # working-directory: MLProject # TIDAK DIPERLUKAN LAGI UNTUK PENCARIAN MLRUNS
       run: |
-        # Cari direktori run terbaru berdasarkan timestamp (biasanya nama direktori adalah run_id)
-        # MLflow menyimpan metadata run di mlruns/<experiment_id>/<run_id>/meta.yaml
-        # Kita akan mencari direktori run ID yang paling baru dibuat
-        LATEST_RUN_DIR=$(find mlruns/ -maxdepth 2 -type d -name "*-*-*-*-*" | sort -r | head -n 1)
+        # Cari direktori run terbaru di /tmp/mlruns/, BUKAN di MLProject/mlruns/
+        LATEST_RUN_DIR=$(find /tmp/mlruns/ -maxdepth 2 -type d -name "*-*-*-*-*" | sort -r | head -n 1)
 
         if [ -z "$LATEST_RUN_DIR" ]; then
-          echo "No MLflow run directory found in mlruns/."
+          echo "No MLflow run directory found in /tmp/mlruns/."
           exit 1
         fi
 
-        # Ekstrak run_id dari path direktori
-        # Pathnya akan seperti mlruns/0/<run_id> atau mlruns/<experiment_id>/<run_id>
         LATEST_RUN_ID=$(basename "$LATEST_RUN_DIR")
         echo "Found latest MLflow run ID: $LATEST_RUN_ID"
-
-        # Simpan run_id sebagai output step, sehingga bisa diakses oleh step lain jika diperlukan
         echo "run_id=$LATEST_RUN_ID" >> $GITHUB_OUTPUT
 
-    - name: Upload MLflow Artifacts # Mengunggah artefak MLflow yang dihasilkan
+    - name: Upload MLflow Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: mlflow-artifacts
-        path: MLProject/mlruns/
-        # if-no-files-found: warn # Opsional: warn jika tidak ada file ditemukan daripada gagal
+        # PENTING: Ubah path ini agar sesuai dengan /tmp/mlruns
+        path: /tmp/mlruns/
