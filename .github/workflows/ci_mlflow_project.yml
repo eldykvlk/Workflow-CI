@@ -62,11 +62,10 @@ jobs:
       run: |
         conda run -n walmart_sales_env python modelling.py
       working-directory: MLProject
-    
 
-    # Opsional: Langkah untuk mengunggah artefak atau hasil
-    - name: Upload MLflow Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: mlflow-artifacts
-        path: MLProject/mlruns/ # MLflow stores runs in the mlruns/ folder by default
+    - name: Get latest MLflow run_id
+      shell: bash -l {0}
+      run: |
+        latest_run=$(ls -td MLProject/mlruns/*/* | head -n 1)
+        echo "Latest run directory: $latest_run"
+
