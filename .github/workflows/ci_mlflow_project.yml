@@ -3,69 +3,39 @@ name: CI for MLflow Project
 on:
   push:
     branches:
-      - master # Trigger workflow setiap ada push ke branch 'master'
+      - master  # Trigger setiap push ke master
 
 jobs:
   train_model:
-    runs-on: ubuntu-latest # Jalankan di runner Ubuntu terbaru
+    runs-on: ubuntu-latest  # Set up job
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4 # Mengambil kode dari repositori
+      - name: Run actions/checkout
+        uses: actions/checkout@v3  # Checkout source code
 
-    - name: Setup Miniconda
-      uses: conda-incubator/setup-miniconda@v3
-      with:
-        miniconda-version: "latest"
-        python-version: 3.10.0 # Make sure this matches your conda.yaml
-        auto-update-conda: true
-        use-mamba: true
-        auto-activate-base: false
-        add-to-path: true
+      - name: Set up Python 3.12.7
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12.7
 
-    - name: List Existing Conda Environments (for debug)
-      shell: bash -l {0}
-      run: |
-        echo "Listing all known conda environments BEFORE creation attempt:"
-        conda info --envs
+      - name: Check Env
+        run: |
+          python --version
+          pip --version
 
-    - name: Create Conda Environment
-      shell: bash -l {0} # Tetap gunakan login shell
-      run: |
-        echo "Creating conda environment 'walmart_sales_env' from conda.yaml..."
-        # Hapus '|| true' agar step ini GAGAL jika pembuatan environment tidak berhasil
-        conda env create -f conda.yaml
-        echo "Conda environment creation finished successfully."
-      working-directory: MLProject # Perintah conda env create dijalankan di sini
+      - name: Install dependencies
+        working-directory: MLProject
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: List Existing Conda Environments (for debug, AFTER creation attempt)
-      shell: bash -l {0}
-      run: |
-        echo "Listing all known conda environments AFTER creation attempt:"
-        conda info --envs
+      - name: Run MLflow project
+        working-directory: MLProject
+        run: |
+          python modelling.py
 
-    - name: Verify Conda Environment (for debug)
-      shell: bash -l {0}
-      run: |
-        echo "Verifying 'walmart_sales_env'..."
-        # Coba aktifkan lingkungan untuk memastikan itu valid dan ada
-        conda activate walmart_sales_env
-        echo "Successfully activated 'walmart_sales_env'. Listing installed packages:"
-        conda list
-        # Jika berhasil diaktifkan, kita bisa nonaktifkan lagi agar langkah selanjutnya
-        # menggunakan 'conda run -n' dari shell 'base'
-        conda deactivate
-      working-directory: MLProject # Pastikan perintah ini dijalankan di dalam folder MLProject
-
-    - name: Run training script with MLflow logging
-      shell: bash -l {0}
-      run: |
-        conda run -n walmart_sales_env python modelling.py
-      working-directory: MLProject
-
-    - name: Get latest MLflow run_id
-      shell: bash -l {0}
-      run: |
-        latest_run=$(ls -td MLProject/mlruns/*/* | head -n 1)
-        echo "Latest run directory: $latest_run"
-
+      - name: Get latest MLflow run_id
+        working-directory: MLProject
+        run: |
+          latest_run=$(ls -td mlruns/*/* | head -n 1)
+          echo "Latest run directory: $latest_run"
