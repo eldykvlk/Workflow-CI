@@ -1,6 +1,6 @@
 name: walmart-sales-prediction
 
-conda_env: conda.yaml
+conda_env: requirements.txt
 
 entry_points:
   main:
